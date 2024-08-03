@@ -1,0 +1,3 @@
+
+ALTER TABLE users
+ADD COLUMN login_type VARCHAR(20) NOT NULL DEFAULT 'simple';
