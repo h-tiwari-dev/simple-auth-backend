@@ -1,4 +1,4 @@
-.PHONY  clean test secruity build
+.PHONY:  clean test secruity build
 
 APP_NAME = simpe_auth_backend
 BUILD_DIR = $(PWD)/build
@@ -18,20 +18,20 @@ test: secruity
 build: clean test
 	CGO_ENABLED=0 go build -ldflags="-w -s" -o ${BUILD_DIR}/${APP_NAME} main.go
 
-run: swag build
+run: build
 	${BUILD_DIR}/${APP_NAME}
 
-migrate.run:
+migrate.up:
 	migrate -path  ${MIGRATION_FOLDER} -database "${DATABASE_URL}" up 
 
 migrate.down:
 	migrate -path  ${MIGRATION_FOLDER} -database "${DATABASE_URL}" down 
 
-migrate.run:
+migrate.force:
 	migrate -path  ${MIGRATION_FOLDER} -database "${DATABASE_URL}" force $(version)
 
 
-docker.run: docker.network docker.postgres swag docker.fiber migrate.up
+docker.run: docker.network docker.postgres docker.fiber migrate.up
 	
 
 docker.network:
@@ -43,9 +43,9 @@ docker.fiber.build:
 
 docker.fiber: docker.fiber.build
 	docker run --rm -d \
-		--name dev-fibe \
+		--name dev-fiber \
 		--network dev-network \
-		-p 5000:5000 \
+		-p 8080:8080 \
 		fiber
 
 docker.postgres:
@@ -67,9 +67,4 @@ docker.stop.fiber:
 docker.stop.postgres:
 	docker stop dev-postgres
 
-swag:
-	swag init
-
-
-
-
+docker.restart: docker.stop docker.run

@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine  AS builder
+FROM golang:1.22-alpine  AS builder
 
 WORKDIR /build
 
@@ -7,14 +7,13 @@ RUN go mod download
 
 COPY . .
 
-
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 RUN go build -ldflags="-s -w" -o apiserver .
 
 FROM scratch
 
-COPY --from=builder ["/build/apiserver", "/build.env", "/"]
+COPY --from=builder ["/build/apiserver", "/build/.env", "/"]
 
-EXPOSE 5000
+EXPOSE 8080 
 
 ENTRYPOINT [ "/apiserver" ]

@@ -38,9 +38,9 @@ func (q *UserQuery) GetUser(id uuid.UUID) (models.User, error) {
 
 // CreateUser method for creating a user by given User object.
 func (q *UserQuery) CreateUser(u *models.User) error {
-	query := "INSERT INTO users (id, username, email, created_at, updated_at) VALUES ($1, $2, $3, $4, $5);"
+	query := "INSERT INTO users (id, username, password_hash, email, created_at, updated_at) VALUES ($1, $2, $3, $4, $5);"
 
-	_, err := q.Exec(query, u.ID, u.Username, u.Email, u.CreatedAt, u.UpdatedAt)
+	_, err := q.Exec(query, u.ID, u.Username, u.PasswordHash, u.Email, u.CreatedAt, u.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -71,4 +71,3 @@ func (q *UserQuery) DeleteUser(id uuid.UUID) error {
 
 	return nil
 }
-

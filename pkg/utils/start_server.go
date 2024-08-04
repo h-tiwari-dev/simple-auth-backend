@@ -22,6 +22,7 @@ func StartServerWithGracefulShutdown(a *fiber.App) {
 
 		close(idelConnsClosed)
 	}()
+	log.Printf("server url, %v", os.Getenv("SERVER_URL"))
 	if err := a.Listen(os.Getenv("SERVER_URL")); err != nil {
 		log.Printf("Server is not running, %v", err)
 	}
