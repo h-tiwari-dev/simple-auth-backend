@@ -37,11 +37,11 @@ func SignUp(c *fiber.Ctx) error {
 	user.ID = uuid.New()
 	user.CreatedAt = time.Now()
 	user.Active = true
+	user.LoginType = "simple"
 	bytes, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), 14)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error": err.Error(),
 			"token": nil,
 		})
 	}
@@ -53,8 +53,7 @@ func SignUp(c *fiber.Ctx) error {
 	if err := validate.Struct(user); err != nil {
 		// Return, if some fields are not valid.
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   utils.ValidatorError(err),
+			"error": utils.ValidatorError(err),
 			"token": nil,
 		})
 	}
@@ -62,8 +61,7 @@ func SignUp(c *fiber.Ctx) error {
 	if err := db.CreateUser(user); err != nil {
 		// Return status 500 and error message.
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error": err.Error(),
 			"token": nil,
 		})
 	}
@@ -77,16 +75,14 @@ func SignUp(c *fiber.Ctx) error {
 	if err != nil {
 		// Return status 500 and error message.
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error": err.Error(),
 			"token": nil,
 		})
 	}
 
 	// Return status 200 OK.
 	return c.JSON(fiber.Map{
-		"error": false,
-		"msg":   nil,
+		"error": nil,
 		"token": token,
 	})
 }
@@ -95,8 +91,8 @@ func SignIn(c *fiber.Ctx) error {
 	db, err := database.OpenDbConnection()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error": err.Error(),
+			"token": nil,
 		})
 	}
 	signDetails := &models.SignIn{}
@@ -105,8 +101,8 @@ func SignIn(c *fiber.Ctx) error {
 	if err := c.BodyParser(signDetails); err != nil {
 		// Return status 400 and error message.
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error": err.Error(),
+			"token": nil,
 		})
 	}
 
@@ -114,16 +110,15 @@ func SignIn(c *fiber.Ctx) error {
 	if err := validate.Struct(signDetails); err != nil {
 		// Return, if some fields are not valid.
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   utils.ValidatorError(err),
+			"error": utils.ValidatorError(err),
 			"token": nil,
 		})
 	}
 
 	if err := validate.Var(signDetails, "username_or_email"); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error": err.Error(),
+			"token": nil,
 		})
 	}
 
@@ -141,6 +136,7 @@ func SignIn(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": err.Error(),
+			"token": nil,
 		})
 	}
 
@@ -151,6 +147,7 @@ func SignIn(c *fiber.Ctx) error {
 	); err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Password Mismatch. Invalid username or password",
+			"token": nil,
 		})
 	}
 
@@ -163,18 +160,50 @@ func SignIn(c *fiber.Ctx) error {
 	if err != nil {
 		// Return status 500 and error message.
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error": err.Error(),
 			"token": nil,
 		})
 	}
 
 	// Return status 200 OK.
 	return c.JSON(fiber.Map{
-		"error": false,
-		"msg":   nil,
-		"user":  user.ToUserResponse(),
+		"error": nil,
 		"token": token,
+	})
+}
+
+func LoggedIn(c *fiber.Ctx) error {
+	tokenMetaData, err := utils.ExtractTokenMetadata(c)
+	if err != nil {
+		return c.JSON(fiber.Map{
+			"error": err.Error(),
+			"user":  nil,
+		})
+	}
+	db, err := database.OpenDbConnection()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+			"user":  nil,
+		})
+	}
+
+	identifer := tokenMetaData.Email
+	user, err := db.GetUserWithEmailOrUserName(
+		identifer,
+		identifer,
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+			"user":  nil,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"error": nil,
+		"user":  user.ToUserResponse(),
 	})
 }
 
